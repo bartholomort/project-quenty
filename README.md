@@ -3,4 +3,4 @@ YOU MUST COMPLETE THE TUTORIAL BEFORE RUNNING THE SCRIPT
 getgenv().auto = true -- PLACE IN AUTOEXEC & SET TO TRUE TO RUN THE BOT
 loadstring(game:HttpGet("https://raw.githubusercontent.com/bartholomort/project-quenty/main/main.lua"))()
 ```
-- Script uses the Maid & Signal by Quenty. https://github.com/Quenty/NevermoreEngine.git
+The script uses the Maid & Signal by Quenty. https://github.com/Quenty/NevermoreEngine.git

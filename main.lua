@@ -15,6 +15,9 @@ local AllStarsPlayButtonTag = LPH_ENCSTR("AllStarsPlayButton")
 local BartholomortGuiKeyName = "BartholomortGUI"
 local ButtonName = "button"
 local CharacterAttributeName = "Character"
+local ClientAutoRocketLauncherKeyName = "__ClientAutoRocketLauncher"
+local ClientConsoleSuppressorKeyName = "__ClientConsoleSuppressor"
+local ClientDisableTelemetryKeyName = "__ClientDisableTelemetry"
 local CharacterEquipName = "equip"
 local CharacterSelectionEntryName = LPH_ENCSTR("CharacterSelectionEntry")
 local CharacterSelectionHeaderName = LPH_ENCSTR("CharacterSelectionHeader")
@@ -29,13 +32,16 @@ local NoobCharacterName = LPH_ENCSTR("Noob")
 local PromptOverlayName = "promptOverlay"
 local PlayActivateCooldown = 15
 local LabelName = "label"
+local PerkTreesName = "PerkTrees"
 local RemotesName = LPH_ENCSTR("Remotes")
 local RequestCharacterChangeEventName = LPH_ENCSTR("RequestCharacterChangeEvent")
 local RobloxPromptGuiName = "RobloxPromptGui"
+local RuntimeKeyName = "__ProjectQuentyRuntime"
 local ServerActionCheckDelay = 5
 local ServerActionRetryDelay = 60
-local ServerHopDelay = 180
+local ServerHopDelay = 5
 local ServerJoinedAt = os.clock()
+local StandardPerkName = "Standard"
 local TrainingWorldLocation = LPH_ENCSTR("Training")
 local WorldLocationAttributeName = "WorldLocation"
 
@@ -45,6 +51,7 @@ local ClientAutoRocketLauncher = nil
 local ClientConsoleSuppressor = nil
 local ClientDisableTelemetry = nil
 local GlobalEnv = getgenv and getgenv() or _G
+local IsFinalized = false
 local IsUnloading = false
 local Library = nil
 local LoadedMaid = false
@@ -56,6 +63,7 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local PlayActivateCooldownUntil = 0
 local Repo = "https://raw.githubusercontent.com/bartholomort/project-quenty/main/"
 local RequestCharacterChange = nil
+local Runtime = nil
 local SetClientAutoRocketLauncherStarted = nil
 local Signal = nil
 local StartedMaid = false
@@ -111,7 +119,30 @@ local function DestroyAutoRocketMaid()
 	pcall(CurrentAutoRocketMaid.Destroy, CurrentAutoRocketMaid)
 end
 
+local function BeginUnload()
+	if IsUnloading then
+		return
+	end
+
+	IsUnloading = true
+
+	DestroyAutoRocketMaid()
+	StopModule(ClientAutoRocketLauncher, "ClientAutoRocketLauncher")
+	StopModule(ClientConsoleSuppressor, "ClientConsoleSuppressor")
+	StopModule(ClientDisableTelemetry, "ClientDisableTelemetry")
+end
+
 local function FinalizeUnload()
+	if IsFinalized then
+		return
+	end
+
+	IsFinalized = true
+
+	if Runtime and rawget(GlobalEnv, RuntimeKeyName) == Runtime then
+		GlobalEnv[RuntimeKeyName] = nil
+	end
+
 	if GlobalEnv[BartholomortGuiKeyName] == Library then
 		GlobalEnv[BartholomortGuiKeyName] = nil
 	end
@@ -142,6 +173,7 @@ local function FinalizeUnload()
 	PlayActivateCooldownUntil = 0
 	Repo = nil
 	RequestCharacterChange = nil
+	Runtime = nil
 	Signal = nil
 	StartedMaid = false
 	StartedSignal = false
@@ -150,18 +182,76 @@ local function FinalizeUnload()
 end
 
 local function Unload()
-	if IsUnloading then
-		return
+	BeginUnload()
+
+	if Library and type(Library.Remove) == "function" and not Library._IsRemoving then
+		pcall(Library.Remove, Library)
 	end
 
-	IsUnloading = true
+	FinalizeUnload()
+end
 
-	DestroyAutoRocketMaid()
-	StopModule(ClientAutoRocketLauncher, "ClientAutoRocketLauncher")
-	StopModule(ClientConsoleSuppressor, "ClientConsoleSuppressor")
-	StopModule(ClientDisableTelemetry, "ClientDisableTelemetry")
+local function StopExistingGlobalModule(GlobalKeyName)
+	local Module = rawget(GlobalEnv, GlobalKeyName)
+	if Module and type(Module.Stop) == "function" then
+		pcall(Module.Stop, Module)
+	end
 
-	task.defer(FinalizeUnload)
+	if rawget(GlobalEnv, GlobalKeyName) == Module then
+		GlobalEnv[GlobalKeyName] = nil
+	end
+end
+
+local function CleanupExistingRuntime()
+	local ExistingRuntime = rawget(GlobalEnv, RuntimeKeyName)
+	if type(ExistingRuntime) == "table" and ExistingRuntime ~= Runtime then
+		local ExistingUnload = ExistingRuntime.Unload
+		if type(ExistingUnload) == "function" then
+			pcall(ExistingUnload)
+		end
+	end
+
+	if rawget(GlobalEnv, RuntimeKeyName) == ExistingRuntime then
+		GlobalEnv[RuntimeKeyName] = nil
+	end
+
+	local ExistingLibrary = rawget(GlobalEnv, BartholomortGuiKeyName)
+	if ExistingLibrary and type(ExistingLibrary.Remove) == "function" then
+		pcall(ExistingLibrary.Remove, ExistingLibrary)
+	end
+
+	if rawget(GlobalEnv, BartholomortGuiKeyName) == ExistingLibrary then
+		GlobalEnv[BartholomortGuiKeyName] = nil
+	end
+
+	StopExistingGlobalModule(ClientAutoRocketLauncherKeyName)
+	StopExistingGlobalModule(ClientConsoleSuppressorKeyName)
+	StopExistingGlobalModule(ClientDisableTelemetryKeyName)
+
+	local ExistingSignal = rawget(GlobalEnv, "Signal")
+	if ExistingSignal and type(ExistingSignal.Stop) == "function" then
+		pcall(ExistingSignal.Stop, ExistingSignal)
+	end
+
+	if rawget(GlobalEnv, "Signal") == ExistingSignal then
+		GlobalEnv.Signal = nil
+	end
+
+	local ExistingMaid = rawget(GlobalEnv, "Maid")
+	if ExistingMaid and type(ExistingMaid.Stop) == "function" then
+		pcall(ExistingMaid.Stop, ExistingMaid)
+	end
+
+	if rawget(GlobalEnv, "Maid") == ExistingMaid then
+		GlobalEnv.Maid = nil
+	end
+end
+
+local function RegisterRuntime()
+	Runtime = {
+		Unload = Unload,
+	}
+	GlobalEnv[RuntimeKeyName] = Runtime
 end
 
 local TryServerHop = LPH_NO_VIRTUALIZE(function()
@@ -207,6 +297,32 @@ end
 
 local function FindCharacterSelectionScreen()
 	return PlayerGui:FindFirstChild(CharacterSelectionScreenName, true)
+end
+
+local function FindNoobPerkTree()
+	local NoobPerkTree = LocalPlayer:FindFirstChild(NoobCharacterName)
+	if NoobPerkTree and NoobPerkTree:IsA("Folder") and NoobPerkTree:FindFirstChild(StandardPerkName) then
+		return NoobPerkTree
+	end
+
+	local PerkTrees = LocalPlayer:FindFirstChild(PerkTreesName, true)
+	if PerkTrees and PerkTrees:IsA("Folder") then
+		NoobPerkTree = PerkTrees:FindFirstChild(NoobCharacterName)
+		if NoobPerkTree and NoobPerkTree:IsA("Folder") and NoobPerkTree:FindFirstChild(StandardPerkName) then
+			return NoobPerkTree
+		end
+	end
+
+	NoobPerkTree = LocalPlayer:FindFirstChild(NoobCharacterName, true)
+	if NoobPerkTree and NoobPerkTree:IsA("Folder") and NoobPerkTree:FindFirstChild(StandardPerkName) then
+		return NoobPerkTree
+	end
+
+	return nil
+end
+
+local function IsNoobPerkTreeReady()
+	return FindNoobPerkTree() ~= nil
 end
 
 local function ActivateButton(Button)
@@ -285,6 +401,11 @@ local TrySelectNoob = LPH_JIT(function()
 	if CharacterSelectionScreen then
 		if CharacterName ~= NoobCharacterName then
 			ActivateButton(FindNoobButton(CharacterSelectionScreen))
+			return pcall(RequestCharacterChange.FireServer, RequestCharacterChange, NoobCharacterName)
+		end
+
+		if not IsNoobPerkTreeReady() then
+			return false
 		end
 
 		if ActivateButton(FindEquipButton(CharacterSelectionScreen)) then
@@ -293,7 +414,7 @@ local TrySelectNoob = LPH_JIT(function()
 	end
 
 	if CharacterName == NoobCharacterName then
-		return true
+		return IsNoobPerkTreeReady()
 	end
 
 	local Success = pcall(RequestCharacterChange.FireServer, RequestCharacterChange, NoobCharacterName)
@@ -308,6 +429,10 @@ local TryActivatePlayButton = LPH_JIT(function()
 
 	local CharacterName = LocalPlayer:GetAttribute(CharacterAttributeName)
 	if CharacterName ~= NoobCharacterName then
+		return false
+	end
+
+	if not IsNoobPerkTreeReady() then
 		return false
 	end
 
@@ -650,35 +775,31 @@ local function LoadDependencies()
 	GlobalEnv.Maid = Maid
 	LoadedMaid = true
 
+	local StartedMaidSuccess, StartedMaidError = StartModule(Maid, "Maid")
+	if not StartedMaidSuccess then
+		return false, StartedMaidError
+	end
+	StartedMaid = true
+
 	Signal = loadstring(game:HttpGet(Repo .. "dependency/signal.lua"))()
 	GlobalEnv.Signal = Signal
 	LoadedSignal = true
+
+	local StartedSignalSuccess, StartedSignalError = StartModule(Signal, "Signal")
+	if not StartedSignalSuccess then
+		return false, StartedSignalError
+	end
+	StartedSignal = true
 
 	Library = loadstring(game:HttpGet(Repo .. "dependency/library.lua"))()
 	ClientAutoRocketLauncher = loadstring(game:HttpGet(Repo .. "modules/clientautorocketlauncher.lua"))()
 	ClientConsoleSuppressor = loadstring(game:HttpGet(Repo .. "modules/clientconsolesuppressor.lua"))()
 	ClientDisableTelemetry = loadstring(game:HttpGet(Repo .. "modules/clientdisabletelemetry.lua"))()
+
+	return true
 end
 
 local function StartDependencies()
-	if not Maid.IsStarted() then
-		local Success, ErrorMessage = StartModule(Maid, "Maid")
-		if not Success then
-			return false, ErrorMessage
-		end
-
-		StartedMaid = true
-	end
-
-	if not Signal.IsStarted() then
-		local Success, ErrorMessage = StartModule(Signal, "Signal")
-		if not Success then
-			return false, ErrorMessage
-		end
-
-		StartedSignal = true
-	end
-
 	do
 		local Success, ErrorMessage = StartModule(ClientDisableTelemetry, "ClientDisableTelemetry")
 		if not Success then
@@ -727,7 +848,6 @@ local function CreateUi()
 		end)
 	end
 
-	Library.Removing:Connect(Unload)
 	MainTab:Open()
 	Library:ShowUI(true)
 	AutoRocketToggle:Set(GlobalEnv.auto)
@@ -736,7 +856,13 @@ end
 
 EnsureAutoFlag()
 EnsureConsoleSuppressorFlag()
-LoadDependencies()
+CleanupExistingRuntime()
+RegisterRuntime()
+local LoadedDependencies, LoadError = LoadDependencies()
+if not LoadedDependencies then
+	Unload()
+	error(LoadError)
+end
 
 local StartedDependencies, StartError = StartDependencies()
 if not StartedDependencies then

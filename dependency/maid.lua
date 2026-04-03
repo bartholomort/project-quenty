@@ -10,25 +10,6 @@ local State = {
 	LastError = nil,
 }
 
-local function ClearTable(TargetTable)
-	if type(TargetTable) ~= "table" then
-		return
-	end
-
-	for Key in pairs(TargetTable) do
-		TargetTable[Key] = nil
-	end
-end
-
-local function DisposeTable(TargetTable)
-	if type(TargetTable) ~= "table" then
-		return
-	end
-
-	ClearTable(TargetTable)
-	pcall(setmetatable, TargetTable, nil)
-end
-
 local function IsTaskLibraryMethod(TaskLibrary, MethodName)
 	return TaskLibrary and type(TaskLibrary[MethodName]) == "function"
 end
@@ -181,7 +162,6 @@ function Maid.Stop()
 
 	ResetState()
 	State.IsDisposed = true
-	DisposeTable(Maid)
 	return true
 end
 

@@ -179,6 +179,7 @@ local TryServerHop = LPH_NO_VIRTUALIZE(function()
 	end
 
 	local ServerIds = {}
+	local SingleServerPlayerCount = 0
 	for Index = 1, #ServerDataList do
 		local ServerData = ServerDataList[Index]
 		if type(ServerData) == "table"
@@ -189,11 +190,16 @@ local TryServerHop = LPH_NO_VIRTUALIZE(function()
 			and ServerData.id ~= game.JobId
 		then
 			ServerIds[#ServerIds + 1] = ServerData.id
+			SingleServerPlayerCount = ServerData.playing
 		end
 	end
 
 	if #ServerIds == 0 then
 		return false
+	end
+
+	if #ServerIds == 1 and SingleServerPlayerCount > 0 then
+		return TryRejoin()
 	end
 
 	local TeleportSuccess = pcall(TeleportService.TeleportToPlaceInstance, TeleportService, game.PlaceId, ServerIds[math.random(1, #ServerIds)], LocalPlayer)

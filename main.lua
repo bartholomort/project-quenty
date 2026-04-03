@@ -54,7 +54,7 @@ local Maid = nil
 local MainTab = nil
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local PlayActivateCooldownUntil = 0
-local Repo = "https://raw.githubusercontent.com/bartholomort/project-quenty/main/"
+local Repo = "https://raw.githubusercontent.com/bartholomort/project-quenty/"
 local RequestCharacterChange = nil
 local SetClientAutoRocketLauncherStarted = nil
 local Signal = nil
@@ -646,19 +646,13 @@ end
 local function LoadDependencies()
 	RequestCharacterChange = ReplicatedStorage:WaitForChild(RemotesName):WaitForChild(CharacterSelectionServiceRemoteFolderName):WaitForChild(RequestCharacterChangeEventName)
 
-	Maid = GlobalEnv.Maid
-	if type(Maid) ~= "table" or type(Maid.IsStarted) ~= "function" then
-		Maid = loadstring(game:HttpGet(Repo .. "dependency/maid.lua"))()
-		GlobalEnv.Maid = Maid
-		LoadedMaid = true
-	end
+	Maid = loadstring(game:HttpGet(Repo .. "dependency/maid.lua"))()
+	GlobalEnv.Maid = Maid
+	LoadedMaid = true
 
-	Signal = GlobalEnv.Signal
-	if type(Signal) ~= "table" or type(Signal.IsStarted) ~= "function" then
-		Signal = loadstring(game:HttpGet(Repo .. "dependency/signal.lua"))()
-		GlobalEnv.Signal = Signal
-		LoadedSignal = true
-	end
+	Signal = loadstring(game:HttpGet(Repo .. "dependency/signal.lua"))()
+	GlobalEnv.Signal = Signal
+	LoadedSignal = true
 
 	Library = loadstring(game:HttpGet(Repo .. "dependency/library.lua"))()
 	ClientAutoRocketLauncher = loadstring(game:HttpGet(Repo .. "modules/clientautorocketlauncher.lua"))()

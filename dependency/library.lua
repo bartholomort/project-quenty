@@ -106,6 +106,34 @@ local function CleanupResource(Resource)
 	end
 end
 
+local function StartModule(ModuleTable)
+	if type(ModuleTable) ~= "table" then
+		return false
+	end
+
+	local IsStarted = true
+	if type(ModuleTable.IsStarted) == "function" then
+		local Success, Result = pcall(ModuleTable.IsStarted)
+		IsStarted = Success and Result or false
+	end
+
+	if IsStarted then
+		return true
+	end
+
+	if type(ModuleTable.Start) ~= "function" then
+		return false
+	end
+
+	local Success, Result = pcall(ModuleTable.Start)
+	if not Success then
+		Warn("Failed to start global module", Result)
+		return false
+	end
+
+	return Result ~= false
+end
+
 local function CreateFallbackMaid()
 	local MaidObject = {
 		Tasks = {},
@@ -178,6 +206,9 @@ end
 
 local Maid = rawget(GlobalEnv, "Maid")
 local Signal = rawget(GlobalEnv, "Signal")
+
+StartModule(Maid)
+StartModule(Signal)
 
 local function CreateCleanupMaid()
 	if type(Maid) == "table" then
@@ -285,10 +316,22 @@ Library._SignalMaid = CreateCleanupMaid()
 Library.Removing = CreateCleanupSignal()
 Library.Removed = CreateCleanupSignal()
 
-	TrackTask(Library._SignalMaid, Library.Removing)
-	TrackTask(Library._SignalMaid, Library.Removed)
+TrackTask(Library._SignalMaid, Library.Removing)
+TrackTask(Library._SignalMaid, Library.Removed)
+TrackTask(Library._CleanupMaid, function()
+	if GlobalEnv.BartholomortGUI == Library then
+		GlobalEnv.BartholomortGUI = nil
+	end
+end)
 
-	local Blur = Instance.new("BlurEffect", CurrentCam)
+if GlobalEnv.BartholomortGUI then
+	pcall(function()
+		GlobalEnv.BartholomortGUI:Remove()
+	end)
+end
+GlobalEnv.BartholomortGUI = Library
+
+local Blur = Instance.new("BlurEffect", CurrentCam)
 Blur.Enabled = true
 Blur.Size = 0
 TrackTask(Library._CleanupMaid, Blur)

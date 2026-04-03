@@ -164,6 +164,11 @@ local function Unload()
 	task.defer(FinalizeUnload)
 end
 
+local function TryRejoin()
+	local Success = pcall(TeleportService.Teleport, TeleportService, game.PlaceId, LocalPlayer)
+	return Success
+end
+
 local TryServerHop = LPH_NO_VIRTUALIZE(function()
 	local Success, ResponseBody = pcall(function()
 		return game:HttpGet(("https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Desc&limit=100&excludeFullGames=true"):format(game.PlaceId))
@@ -205,11 +210,6 @@ local TryServerHop = LPH_NO_VIRTUALIZE(function()
 	local TeleportSuccess = pcall(TeleportService.TeleportToPlaceInstance, TeleportService, game.PlaceId, ServerIds[math.random(1, #ServerIds)], LocalPlayer)
 	return TeleportSuccess
 end)
-
-local function TryRejoin()
-	local Success = pcall(TeleportService.Teleport, TeleportService, game.PlaceId, LocalPlayer)
-	return Success
-end
 
 local function FindCharacterSelectionScreen()
 	return PlayerGui:FindFirstChild(CharacterSelectionScreenName, true)

@@ -60,6 +60,7 @@ local SetClientAutoRocketLauncherStarted = nil
 local Signal = nil
 local StartedMaid = false
 local StartedSignal = false
+local CurrentServerPlayerCount = #Players:GetPlayers()
 
 local function EnsureAutoFlag()
 	if type(GlobalEnv.auto) ~= "boolean" then
@@ -210,6 +211,10 @@ local TryServerHop = LPH_NO_VIRTUALIZE(function()
 	local TeleportSuccess = pcall(TeleportService.TeleportToPlaceInstance, TeleportService, game.PlaceId, ServerIds[math.random(1, #ServerIds)], LocalPlayer)
 	return TeleportSuccess
 end)
+
+local function IsSoloServer()
+	return CurrentServerPlayerCount <= 1
+end
 
 local function FindCharacterSelectionScreen()
 	return PlayerGui:FindFirstChild(CharacterSelectionScreenName, true)
@@ -379,8 +384,26 @@ local function SetAutoRocketEnabled(Value)
 	AutoRocketMaid = Maid.New()
 	local CurrentAutoRocketMaid = AutoRocketMaid
 
+	CurrentServerPlayerCount = #Players:GetPlayers()
 	local RetryAt = ServerJoinedAt + ServerHopDelay
-		local UpdateCharacterState = nil
+	local UpdateCharacterState = nil
+
+	local function TryImmediateSoloServerHop()
+		if not IsSoloServer() then
+			return false
+		end
+
+		if LocalPlayer:GetAttribute(IsTeleportingAttributeName) == true then
+			return false
+		end
+
+		if TryServerHop() then
+			return true
+		end
+
+		RetryAt = os.clock() + ServerActionRetryDelay
+		return false
+	end
 
 	local function RefreshCharacterAutomation()
 		if type(UpdateCharacterState) == "function" then
@@ -540,17 +563,17 @@ local function SetAutoRocketEnabled(Value)
 		UpdateCharacterState()
 	end
 
-		local function EnableAntiAfk()
-			CurrentAutoRocketMaid:GiveTask(LocalPlayer.Idled:Connect(function()
-				VirtualUser:CaptureController()
-				VirtualUser:ClickButton2(Vector2.new(0, 0))
-			end))
-		end
+	local function EnableAntiAfk()
+		CurrentAutoRocketMaid:GiveTask(LocalPlayer.Idled:Connect(function()
+			VirtualUser:CaptureController()
+			VirtualUser:ClickButton2(Vector2.new(0, 0))
+		end))
+	end
 
-		CurrentAutoRocketMaid:GiveTask(function()
-			SetClientAutoRocketLauncherStarted(false)
-			UpdateCharacterState = nil
-		end)
+	CurrentAutoRocketMaid:GiveTask(function()
+		SetClientAutoRocketLauncherStarted(false)
+		UpdateCharacterState = nil
+	end)
 
 	CurrentAutoRocketMaid:GiveTask(LocalPlayer:GetAttributeChangedSignal(CharacterAttributeName):Connect(function()
 		TrySelectNoob()
@@ -567,6 +590,23 @@ local function SetAutoRocketEnabled(Value)
 	end))
 	CurrentAutoRocketMaid:GiveTask(CollectionService:GetInstanceAddedSignal(AllStarsPlayButtonTag):Connect(function()
 		TryActivatePlayButton()
+	end))
+	CurrentAutoRocketMaid:GiveTask(Players.PlayerAdded:Connect(function()
+		CurrentServerPlayerCount = CurrentServerPlayerCount + 1
+	end))
+	CurrentAutoRocketMaid:GiveTask(Players.PlayerRemoving:Connect(function(Player)
+		if Player == LocalPlayer then
+			return
+		end
+
+		CurrentServerPlayerCount = math.max(0, CurrentServerPlayerCount - 1)
+		task.defer(function()
+			if AutoRocketMaid ~= CurrentAutoRocketMaid then
+				return
+			end
+
+			TryImmediateSoloServerHop()
+		end)
 	end))
 	CurrentAutoRocketMaid:GiveTask(LocalPlayer.CharacterAdded:Connect(BindCharacter))
 	CurrentAutoRocketMaid:GiveTask(LocalPlayer.CharacterRemoving:Connect(function()
@@ -596,7 +636,15 @@ local function SetAutoRocketEnabled(Value)
 			TrySelectNoob()
 			TryActivatePlayButton()
 
-			if Now >= RetryAt then
+			if IsSoloServer() then
+				if Now >= RetryAt then
+					if TryServerHop() then
+						return
+					end
+
+					RetryAt = Now + ServerActionRetryDelay
+				end
+			elseif Now >= RetryAt then
 				if TryServerHop() then
 					return
 				end
@@ -612,6 +660,7 @@ local function SetAutoRocketEnabled(Value)
 	TrySelectNoob()
 	TryActivatePlayButton()
 	BindCharacter(LocalPlayer.Character)
+	TryImmediateSoloServerHop()
 end
 
 local function LoadDependencies()

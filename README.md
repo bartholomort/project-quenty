@@ -3,9 +3,10 @@
 getgenv().auto = true -- PLACE IN AUTOEXEC & SET TO TRUE TO RUN THE BOT
 loadstring(game:HttpGet("https://raw.githubusercontent.com/bartholomort/project-quenty/main/main.lua"))()
 ```
-![quentymoment](https://github.com/user-attachments/assets/6f321512-e8f8-4cb0-a49d-cfc60cc1ff5a)
-![bot](https://github.com/user-attachments/assets/8e42d316-fa79-4127-869a-a2603723902b) <br />
-<img width="636" height="447" alt="image" src="https://github.com/user-attachments/assets/5a250da8-b809-4add-af75-53aa0e7428af" /> <br />
+![autorocketlauncher](https://github.com/user-attachments/assets/3efce5fa-03dd-40fd-a646-11f10051dd45)
+![projectquentybot](https://github.com/user-attachments/assets/ae78480f-eb37-4366-8902-14a1adf71f52) <br />
+![projectquentyui](https://github.com/user-attachments/assets/4bb36089-e67c-41ca-9da1-7a6643adf8ae) <br />
+
 This script uses Maid & Signal by Quenty. https://github.com/Quenty/NevermoreEngine.git
 
 **DISCLAIMER:** <br />

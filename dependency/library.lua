@@ -385,7 +385,7 @@ local function EnableDrag(Object, Latency, MaidObject)
 	Latency = Latency or 0.06
 
 	local Toggled = false
-	local InputObject = nil
+	local DragInput = nil
 	local StartPosition = nil
 	local InitialPosition = Object.Position
 	local DragTween = nil
@@ -404,7 +404,6 @@ local function EnableDrag(Object, Latency, MaidObject)
 		if not InputIsAccepted(Input) then return end
 
 		Toggled = true
-		InputObject = Input
 		StartPosition = Input.Position
 		InitialPosition = Object.Position
 	end)
@@ -413,19 +412,19 @@ local function EnableDrag(Object, Latency, MaidObject)
 		local MouseMovement = Input.UserInputType == Enum.UserInputType.MouseMovement
 		if not MouseMovement and not InputIsAccepted(Input) then return end
 
-		InputObject = Input
+		DragInput = Input
 	end)
 
 	ConnectTracked(MaidObject, UserInputService.InputEnded, function(Input)
-		if Input == InputObject then
+		if Toggled and InputIsAccepted(Input) then
 			Toggled = false
-			InputObject = nil
+			DragInput = nil
 		end
 	end)
 
 	ConnectTracked(MaidObject, UserInputService.InputChanged, function(Input)
-		if Input == InputObject and Toggled and StartPosition then
-			local Delta = InputObject.Position - StartPosition
+		if Input == DragInput and Toggled and StartPosition then
+			local Delta = Input.Position - StartPosition
 			local Position = UDim2.new(InitialPosition.X.Scale, InitialPosition.X.Offset + Delta.X, InitialPosition.Y.Scale, InitialPosition.Y.Offset + Delta.Y)
 			if DragTween then
 				DragTween:Cancel()

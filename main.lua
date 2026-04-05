@@ -551,6 +551,46 @@ local function SetAutoRocketEnabled(Value)
 		end)
 
 		UpdateCharacterState()
+
+		local function VisitArena(ArenaModel)
+			if not LockedRootCFrame or AutoRocketMaid ~= CurrentAutoRocketMaid then
+				return
+			end
+
+			local Success, ArenaCFrame = pcall(ArenaModel.GetPivot, ArenaModel)
+			if not Success or not ArenaCFrame then
+				return
+			end
+
+			local PreviousCFrame = LockedRootCFrame
+			LockedRootCFrame = ArenaCFrame
+			task.wait()
+
+			if AutoRocketMaid == CurrentAutoRocketMaid then
+				LockedRootCFrame = PreviousCFrame
+			end
+		end
+
+		local function ConnectPrivateMatchFolder(Folder)
+			for _, ArenaModel in Folder:GetChildren() do
+				task.delay(5, VisitArena, ArenaModel)
+			end
+
+			CharacterMaid._privateMatch = Folder.ChildAdded:Connect(function(ArenaModel)
+				task.delay(5, VisitArena, ArenaModel)
+			end)
+		end
+
+		local PrivateMatchFolder = workspace:FindFirstChild("AllStarsPrivateMatch")
+		if PrivateMatchFolder then
+			ConnectPrivateMatchFolder(PrivateMatchFolder)
+		end
+
+		CharacterMaid:GiveTask(workspace.ChildAdded:Connect(function(Child)
+			if Child.Name == "AllStarsPrivateMatch" then
+				ConnectPrivateMatchFolder(Child)
+			end
+		end))
 	end
 
 	local function EnableAntiAfk()

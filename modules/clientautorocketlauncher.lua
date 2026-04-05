@@ -406,6 +406,10 @@ local function PlayRocketFromRootPart(NoobClient, AttackData, RootPart)
 
 	local CanApplyExplosionDamage = true
 	RocketMaid:GiveTask(Bullet.BulletInterruption:Connect(function(InterruptionData)
+		if not State.ActiveRocketMaids[RocketMaid] then
+			return
+		end
+
 		if not RocketInterruptionMatches(InterruptionData.interruptionType) or not InterruptionData.hitInstance then
 			return
 		end

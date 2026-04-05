@@ -324,7 +324,7 @@ end
 
 local function PlayRocketFromRootPart(NoobClient, AttackData, RootPart)
 	local Character = NoobClient and NoobClient._obj
-	if not Character or not RootPart or Character:HasTag("CombatNPC") then
+	if not Character or not RootPart then
 		return
 	end
 
@@ -494,6 +494,8 @@ local function PatchedRocketActivated(NoobClient, AttackData)
 		return State.OriginalRocketActivated(NoobClient, AttackData)
 	end
 
+	local TargetRootParts = {}
+
 	local PlayerList = Players:GetPlayers()
 	for Index = 1, #PlayerList do
 		local Player = PlayerList[Index]
@@ -501,11 +503,24 @@ local function PatchedRocketActivated(NoobClient, AttackData)
 			local Character = Player.Character
 			local RootPart = Character and Character:FindFirstChild(RootPartName)
 			if RootPart then
-				local Success, ErrorMessage = pcall(PlayRocketFromRootPart, NoobClient, AttackData, RootPart)
-				if not Success then
-					State.LastError = ErrorMessage
-				end
+				TargetRootParts[#TargetRootParts + 1] = RootPart
 			end
+		end
+	end
+
+	local NpcList = CollectionService:GetTagged("CombatNPC")
+	for Index = 1, #NpcList do
+		local NpcModel = NpcList[Index]
+		local RootPart = NpcModel:IsA("Model") and NpcModel:FindFirstChild(RootPartName)
+		if RootPart then
+			TargetRootParts[#TargetRootParts + 1] = RootPart
+		end
+	end
+
+	for Index = 1, #TargetRootParts do
+		local Success, ErrorMessage = pcall(PlayRocketFromRootPart, NoobClient, AttackData, TargetRootParts[Index])
+		if not Success then
+			State.LastError = ErrorMessage
 		end
 	end
 end

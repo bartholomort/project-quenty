@@ -185,7 +185,6 @@ local TryServerHop = LPH_NO_VIRTUALIZE(function()
 	end
 
 	local ServerIds = {}
-	local SingleServerPlayerCount = 0
 	for Index = 1, #ServerDataList do
 		local ServerData = ServerDataList[Index]
 		if type(ServerData) == "table"
@@ -196,15 +195,10 @@ local TryServerHop = LPH_NO_VIRTUALIZE(function()
 			and ServerData.id ~= game.JobId
 		then
 			ServerIds[#ServerIds + 1] = ServerData.id
-			SingleServerPlayerCount = ServerData.playing
 		end
 	end
 
 	if #ServerIds == 0 then
-		return false
-	end
-
-	if #ServerIds == 1 and SingleServerPlayerCount > 0 then
 		return TryRejoin()
 	end
 
@@ -430,7 +424,6 @@ local function SetAutoRocketEnabled(Value)
 		local OriginalAutoRotate = nil
 		local OriginalJumpHeight = nil
 		local OriginalJumpPower = nil
-		local OriginalRootPartAnchored = nil
 		local OriginalWalkSpeed = nil
 
 		CurrentAutoRocketMaid.CharacterMaid = CharacterMaid
@@ -442,7 +435,6 @@ local function SetAutoRocketEnabled(Value)
 			local CurrentJumpHeight = OriginalJumpHeight
 			local CurrentJumpPower = OriginalJumpPower
 			local CurrentWalkSpeed = OriginalWalkSpeed
-			local CurrentRootPartAnchored = OriginalRootPartAnchored
 
 			LockedHumanoid = nil
 			LockedRootCFrame = nil
@@ -450,12 +442,11 @@ local function SetAutoRocketEnabled(Value)
 			OriginalAutoRotate = nil
 			OriginalJumpHeight = nil
 			OriginalJumpPower = nil
-			OriginalRootPartAnchored = nil
 			OriginalWalkSpeed = nil
 
 			if CurrentRootPart then
 				pcall(function()
-					CurrentRootPart.Anchored = CurrentRootPartAnchored == true
+					CurrentRootPart.Anchored = false
 					CurrentRootPart.AssemblyAngularVelocity = Vector3.zero
 					CurrentRootPart.AssemblyLinearVelocity = Vector3.zero
 				end)
@@ -501,7 +492,6 @@ local function SetAutoRocketEnabled(Value)
 				end
 
 				if RootPart then
-					OriginalRootPartAnchored = RootPart.Anchored
 					LockedRootCFrame = RootPart.CFrame
 				end
 			end

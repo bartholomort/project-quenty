@@ -414,48 +414,50 @@ local function PlayRocketFromRootPart(NoobClient, AttackData, RootPart)
 			return
 		end
 
-		Rocket.Transparency = 1
-		Rocket.Anchored = true
+		pcall(function()
+			Rocket.Transparency = 1
+			Rocket.Anchored = true
 
-		if WhooshSound then
-			WhooshSound:Destroy()
-		end
-
-		local ExplosionEffect = RocketMaid:Add(NoobClient._templates:Clone("NoobRocketExplosion"))
-		ExplosionEffect.WorldCFrame = CFrame.new(InterruptionData.p)
-		ExplosionEffect.Parent = Workspace
-
-		local SurfaceHit = Workspace:Raycast(InterruptionData.p - RocketDirection * 0.01, RocketDirection * 4)
-		if SurfaceHit then
-			local ExplosionVfxTask = NoobClient._vfxHelper:NoobRocketExplosionVFX(InterruptionData.p, SurfaceHit.Normal)
-			if ExplosionVfxTask then
-				RocketMaid:GiveTask(ExplosionVfxTask)
+			if WhooshSound then
+				WhooshSound:Destroy()
 			end
-		end
 
-		local CollideSound = SoundUtils.playFromIdInParent("rbxasset://sounds/collide.wav", ExplosionEffect)
-		if CollideSound then
-			CombatSoundEffectUtils.adjustSoundRolloff(CollideSound)
-			NoobClient._soundEffectService:RegisterSFX(CollideSound)
-		end
+			local ExplosionEffect = RocketMaid:Add(NoobClient._templates:Clone("NoobRocketExplosion"))
+			ExplosionEffect.WorldCFrame = CFrame.new(InterruptionData.p)
+			ExplosionEffect.Parent = Workspace
 
-		for _, ParticleEmitter in ParticleEmitterUtils.getParticleEmitters(LaunchTrail) do
-			ParticleEmitter.Enabled = false
-		end
+			local SurfaceHit = Workspace:Raycast(InterruptionData.p - RocketDirection * 0.01, RocketDirection * 4)
+			if SurfaceHit then
+				local ExplosionVfxTask = NoobClient._vfxHelper:NoobRocketExplosionVFX(InterruptionData.p, SurfaceHit.Normal)
+				if ExplosionVfxTask then
+					RocketMaid:GiveTask(ExplosionVfxTask)
+				end
+			end
 
-		local ExplosionEmitterTask = ParticleEmitterUtils.playAllEmitters(ExplosionEffect)
-		if ExplosionEmitterTask then
-			RocketMaid:GiveTask(ExplosionEmitterTask)
-		end
+			local CollideSound = SoundUtils.playFromIdInParent("rbxasset://sounds/collide.wav", ExplosionEffect)
+			if CollideSound then
+				CombatSoundEffectUtils.adjustSoundRolloff(CollideSound)
+				NoobClient._soundEffectService:RegisterSFX(CollideSound)
+			end
 
-		if NoobClient._player == LocalPlayer and CanApplyExplosionDamage then
-			CanApplyExplosionDamage = false
-			NoobClient._overlapParams.FilterDescendantsInstances = CollectionService:GetTagged(HittableTagName)
+			for _, ParticleEmitter in ParticleEmitterUtils.getParticleEmitters(LaunchTrail) do
+				ParticleEmitter.Enabled = false
+			end
 
-			local HitParts = Workspace:GetPartBoundsInRadius(InterruptionData.p, ExplosionRadius, NoobClient._overlapParams)
-			Rocket.Position = InterruptionData.p
-			NoobClient._helper:AttackFromPartList(HitParts, Rocket, AttackData, true)
-		end
+			local ExplosionEmitterTask = ParticleEmitterUtils.playAllEmitters(ExplosionEffect)
+			if ExplosionEmitterTask then
+				RocketMaid:GiveTask(ExplosionEmitterTask)
+			end
+
+			if NoobClient._player == LocalPlayer and CanApplyExplosionDamage then
+				CanApplyExplosionDamage = false
+				NoobClient._overlapParams.FilterDescendantsInstances = CollectionService:GetTagged(HittableTagName)
+
+				local HitParts = Workspace:GetPartBoundsInRadius(InterruptionData.p, ExplosionRadius, NoobClient._overlapParams)
+				Rocket.Position = InterruptionData.p
+				NoobClient._helper:AttackFromPartList(HitParts, Rocket, AttackData, true)
+			end
+		end)
 	end))
 
 	RocketMaid:GiveTask(task.delay(RocketLifetime, function()
